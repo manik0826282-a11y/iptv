@@ -76,10 +76,13 @@ export default {
 
     const ctype = upstream.headers.get('content-type') || '';
 
-    // Only buffer + rewrite if it might be a playlist; otherwise stream straight through
-    if (looksLikePlaylistByExt) {
+    // Only buffer + rewrite if it's ACTUALLY a playlist based on Content-Type or known extension;
+    // otherwise stream straight through to avoid corrupting binary TS segments.
+    const isActuallyPlaylist = ctype.toLowerCase().includes('mpegurl') || path.endsWith('.m3u8');
+
+    if (isActuallyPlaylist) {
       const bodyText = await upstream.text();
-      const isPlaylist = bodyText.trimStart().startsWith('#EXTM3U') || ctype.includes('mpegurl');
+      const isPlaylist = bodyText.trimStart().startsWith('#EXTM3U');
 
       if (isPlaylist) {
         const baseUrl = target.substring(0, target.lastIndexOf('/') + 1);
